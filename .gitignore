@@ -99,3 +99,11 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+###########################
+# project settings
+###########################
+.idea
+
+# do not sync stack-docker
+metacatalog/elk/stack-docker

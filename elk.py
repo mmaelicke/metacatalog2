@@ -6,6 +6,9 @@ import subprocess
 import os
 from shutil import copyfile
 
+from elasticsearch import Elasticsearch
+from elasticsearch import AuthenticationException
+
 
 def check_git():
     try:
@@ -71,7 +74,30 @@ def run_elk():
 
     # restore original wd
     os.chdir(old_wd)
-    print('ELK is running on localhost\nelasticsearch  https://localhost:9200\nkibana         https://localhost:5601')
+    print('ELK is running on localhost\nelasticsearch  http://localhost:9200\nkibana         http://localhost:5601')
+
+    return True
+
+
+def elk_health():
+    # get user and password
+    user = 'elastic'
+    # get password, a bit dirty...
+    # TODO this should be moved into the flask app config object.
+    with open(os.path.join(os.path.dirname(__file__), 'metacatalog2/elk/.env',), 'r') as f:
+        env = f.read()
+    for line in env.split('\n'):
+        if line.split('=')[0].strip() == 'ELASTIC_PASSWORD':
+            pw = line.split('=')[1].strip()
+
+    # init a ES object.
+    # TODO host and port need to be set from the config in the main app
+    es = Elasticsearch(['http://%s:%s@localhost:9200' % (user, pw)])
+    print('Elasticsearch status:\n')
+    try:
+        print(es.cat.health())
+    except AuthenticationException as e:
+        print('Failed!\n\n%s' % str(e))
 
     return True
 
@@ -82,3 +108,6 @@ if __name__ == '__main__':
         get_elk_stack()
     if 'run' in sys.argv:
         run_elk()
+        elk_health()
+    elif 'status' in sys.argv or 'health' in sys.argv:
+        elk_health()
