@@ -3,5 +3,3 @@ requirements.txt
 VERSION
 metacatalog2/static/*
 metacatalog2/templates/*
-metacatalog2/elk/.env
-metacatalog2/elk/docker-compose.yml
