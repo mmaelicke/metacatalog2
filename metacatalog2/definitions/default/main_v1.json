@@ -1,0 +1,198 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "filter": {
+        "trigram_filter": {
+          "type": "ngram",
+          "min_gram": 3,
+          "max_gram": 3
+        },
+        "bigram_filter": {
+          "type": "ngram",
+          "min_gram": 2,
+          "max_gram": 2
+        },
+        "bi_shingles": {
+          "type": "shingle",
+          "output_unigrams": false
+        },
+        "en_stop": {
+          "type": "stop",
+          "stopwords": "_english_"
+        },
+        "en_stemmer": {
+          "type": "stemmer",
+          "language": "english"
+        }
+      },
+      "analyzer": {
+        "trigram": {
+          "filter": [
+            "lowercase",
+            "trigram_filter"
+          ],
+          "type": "custom",
+          "tokenizer": "standard"
+        },
+        "en_shingles": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "en_stop",
+            "en_stemmer",
+            "bi_shingles"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "page": {
+      "properties": {
+        "title": {
+          "type": "text",
+          "fields": {
+            "trigrams": {
+              "type": "text",
+              "analyzer": "trigram"
+            },
+            "en": {
+              "type": "text",
+              "analyzer": "english"
+            },
+            "raw": {
+              "type": "keyword",
+              "boost": 1.15
+            },
+            "shingles": {
+              "type": "text",
+              "analyzer": "en_shingles",
+              "boost": 1.15
+            }
+          }
+        },
+        "identifiers": {
+          "type": "text",
+          "fields": {
+            "raw": {
+              "type": "keyword",
+              "boost": 1.1
+            },
+            "trigrams": {
+              "type": "text",
+              "analyzer": "trigram"
+            },
+            "en": {
+              "type": "text",
+              "analyzer": "english"
+            },
+            "shingles": {
+              "type": "text",
+              "analyzer": "en_shingles",
+              "boost": 1.1
+            }
+          }
+        },
+        "variable": {
+          "type": "text",
+          "fields": {
+            "trigrams": {
+              "type": "text",
+              "analyzer": "trigram"
+            },
+            "raw": {
+              "type": "keyword",
+              "boost": 1.1
+            }
+          }
+        },
+        "license": {
+          "type": "keyword",
+          "fields": {
+            "trigrams": {
+              "type": "text",
+              "analyzer": "trigram"
+            }
+          }
+        },
+        "owner": {
+          "type": "text",
+          "fields": {
+            "trigrams": {
+              "type": "text",
+              "analyzer": "trigram"
+            },
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "location": {
+          "type": "geo_shape",
+          "precision": "1m",
+          "tree": "quadtree"
+        },
+        "coordinates": {
+          "type": "geo_point"
+        },
+        "description": {
+          "type": "text",
+          "fields": {
+            "en": {
+              "type": "text",
+              "analyzer": "english"
+            },
+            "shingles": {
+              "type": "text",
+              "analyzer": "en_shingles",
+              "boost": 1.05
+            }
+          }
+        },
+        "created": {
+          "type": "date",
+          "format": "yyyy-MM-dd HH:mm:ss"
+        },
+        "edited": {
+          "type": "date",
+          "format": "yyyy-MM-dd HH:mm:ss"
+        },
+        "supplementary": {
+          "type": "object"
+        },
+        "info": {
+          "type": "object",
+          "properties": {
+            "votes": {"type": "integer"},
+            "downloads": {"type": "integer"}
+          }
+        }
+      },
+      "dynamic_templates": [
+        {
+          "supplementary_mapping": {
+            "path_match": "page.supplementary.*",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "text",
+              "fields": {
+                "en": {
+                  "type": "text",
+                  "analyzer": "english"
+                },
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
