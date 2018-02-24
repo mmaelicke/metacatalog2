@@ -1,2 +1,2 @@
-flask
-elasticsearch-dsl
+flask>=0.11
+elasticsearch-dsl>=6.1
