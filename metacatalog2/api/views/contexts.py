@@ -99,7 +99,7 @@ def edit_context(id):
 def delete_context(id):
     """
     Delete the requested context object.
-    This will NOT delete the index, but any alias of the same name.
+    This WILL delete the index, but any alias of the same name.
 
     :param id: str, the unique ID of the requested Context
     :return: aknowledge message as JSON

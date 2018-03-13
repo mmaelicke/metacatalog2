@@ -14,8 +14,11 @@ search = Search(using=es)
 # build a custom DocType class, which is extended by some useful fuctions
 class DocType(ElasticDocType):
     @classmethod
-    def all(cls, as_hit=False):
+    def all(cls, as_hit=False, index=None, limit=None):
         """
+        Return all documents
+        --------------------
+
         Return all instances of this DocType objects from the index.
         Note: it does by default set the hit return range to 0:total_hits, that might cause some
         traffic for large indices.
@@ -25,18 +28,32 @@ class DocType(ElasticDocType):
         By default, the hits will be converted into the calling clss `cls`, if as_hit is True, they will
         be returned as search hit objects (including the score of 1).
 
-        :return: list, all documents in the index
+        Parameters
+        ----------
         :param as_hit: bool, if True the instances will be returned as `elasticsearch_dsl.response.hit.Hit`, else as
                 `elasticsearch_dsl.DocType`.
+        :param index: The index to be used for searching. Can overwrite the default in inheriting classes.
+        :param limit: integer, limit the output, similar to SQL LIMIT.
+        :return: list, all documents in the index
         """
         s = cls.search()
 
         # overwrite the default result range of 10 hits
-        s = s[0:s.count()]
+        if limit is None or limit == 'max':
+            limit = s.count()
+        else:
+            limit = int(limit)
+        s = s[0:limit]
+
+        if index is not None:
+            # empty the index ist
+            s = s.index()
+            # set the new search context
+            s = s.index(index.split(','))
 
         # execute a empty search on the context document type
         if as_hit:
-            return [hit for hit in s.execute()]
+            return list(s)
         else:
             return cls.mget([hit.meta.id for hit in s.execute()])
 

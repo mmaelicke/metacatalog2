@@ -2,6 +2,8 @@ from datetime import datetime as dt
 
 from elasticsearch_dsl import Text, Object, Date, GeoPoint, GeoShape, Integer
 from elasticsearch_dsl import Index
+from elasticsearch_dsl.response.hit import Hit
+from elasticsearch.exceptions import TransportError
 from shapely import wkt
 import requests
 from requests import HTTPError
@@ -30,6 +32,32 @@ class Context(DocType):
         doc_type = 'context'
         using = es
 
+    @classmethod
+    def by_name(cls, name, strict=True):
+        """
+        Return an Context instance by name.
+
+        This will filter for a Context exactly matching the name attribute.
+        The name is case sensitive. If multiple instances in the index match the exact
+        pattern and :param strict: is `True` (default), an Error is raised, else only
+        the first instance is returned.
+
+        Parameter
+        ---------
+        :param name: string, the name of the context
+        :param strict: bool, if True a multi-match will cause an exception
+        :return: the `metacatalog2.models.Context` of `name`
+        """
+        s = cls.search().filter('term', name=name)
+
+        # check
+        if strict and s.count() > 1:
+            raise HTTPError(412, 'There is more than one Context of name "%s" and that\'s bad.' % name)
+        elif s.count() == 0:
+            raise HTTPError(404, 'A Context of name "%s" could not be found.' % name)
+        else:
+            return list(s).pop()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if not self.has('v') or self.v is None:
@@ -41,6 +69,10 @@ class Context(DocType):
     @property
     def index_endpoint(self):
         return es.transport.get_connection().host + '/%s_v%d' % (self.name, self.v)
+
+    @property
+    def index_name(self):
+        return '%s_v%d' % (self.name, self.v)
 
     def create_index(self, definition_name='page'):
         """
@@ -151,10 +183,38 @@ class Page(DocType):
 
     # define the index in the Meta object
     class Meta:
-        # TODO: create the global context
-        index = 'caos'
+        index = 'meta'
         doc_type = 'page'
         using = es
+
+    @classmethod
+    def from_hit(cls, hit):
+        """
+        Create a new Page object from a given `elasticsearch_dsl.hit.Hit` from search results.
+        Although simple CRUD can be done on the hit, the Page class offers some helpful  methods
+        not present in the `Hit`.
+
+        Parameter
+        ---------
+        :param hit: `elasticsearch_dsl.hit.Hit`, or dict of the same structure.
+        :return:  Page, created from the hit
+        """
+        if isinstance(hit, Hit):
+            doc = hit.to_dict()
+            meta = hit.meta.to_dict()
+        elif isinstance(hit, dict):
+            meta = hit['meta']
+            del hit['meta']
+            doc = hit
+        else:
+            raise AttributeError('The hit has to be of type Hit or dict, found %s.' % hit.__class__)
+
+        # build the page
+        page = cls(**doc)
+        page.meta.index = meta['index']
+        page.meta.id = meta['id']
+
+        return page
 
     # ------------------------------
     # Methods
@@ -164,13 +224,96 @@ class Page(DocType):
         else:
             return None
 
-
-    # customize the save method
+    # customize the CRUD methods
     def save(self, **kwargs):
         # update the edited field
         self.edited = dt.utcnow()
 
         return super().save(**kwargs)
+
+    @classmethod
+    def get(cls, id, using=None, index=None, context=None, strict=False, **kwargs):
+        """
+        Native get overwrite
+        --------------------
+        This extends the native `elasticsearch_dsl.DocType.get` method. If the index is not set, a context
+        can be passed. Then the `Page` object will be fetched from that index. If context is not of type
+        `metacatalog2.models.Context`, but a string, the object will be *searched* at that context and
+        the best match will be returned. If strict is `True`, this will raise a HTTPError if more than
+        one document is found during search.
+
+        Parameter
+        ---------
+        :param id:          string, the id of the requested object
+        :param using:       `elasticsearch.Elasticsearch` instance to connect to
+        :param index:       the index where the object will be fetched from
+        :param context:     instead of index, either a context name or context obeject can be used
+        :param strict:      raise a HTTPError if more than one hit is found
+        :param kwargs:      will be passed to the native `get` method
+        :return:            the requested object
+        """
+        # if a Context is given, us the index for search
+        if isinstance(context, Context):
+            index = context.index_name
+            context = None
+
+        # the exact index is known, use the parent get method
+        if context is None:
+            try:
+                return super().get(id=id, using=using, index=index, **kwargs)
+            except TransportError as e:
+                if e.status_code != 400:
+                    raise
+                else:
+                    print('TransportError [400], search the meta context for id %s' % id)
+                    context = 'meta'
+
+        # only the index is known, search for the object
+        if isinstance(context, str):
+            results = list(cls.search().filter('match', _id=id))
+
+            if len(results) > 1 and strict:
+                raise HTTPError(409, 'Conflict: Multiple Pages found for id={0} in Context={1}'.format(id, context))
+            elif len(results) == 0:
+                return None
+            else:
+                return Page.from_hit(hit=results.pop())
+
+        # raise a 405 if context is of wrong type
+        else:
+            raise HTTPError(405, 'context must be of instance Context, or a context name as string')
+
+    @classmethod
+    def all(cls, index=None, limit=None):
+        """
+        Return all documents
+        --------------------
+
+        Return all instances of this DocType objects from the index.
+        Note: it does by default set the hit return range to 0:total_hits, that might cause some
+        traffic for large indices.
+        The query is implemented by the `elasticsearch_dsl.Search.execute` method with caching activated.
+        Nevertheless, the search object is re-created on every call, therefore I am not sure if the
+        hits are actually cached.
+
+        Page overwrite
+        --------------
+        This overwrite of the `metacatalog2.elastic.DocType.all` method always uses the hit objects in the
+        response and builds new Page instances from the `Page.from_hit` method. This is needed as the
+        Page documents most likely live in different indices and are fetched from an alias.
+        Therefore the `mget` method does not work
+
+        Parameters
+        ----------
+        :param index: The index to be used for searching. Can overwrite the default in inheriting classes.
+        :param limit: integer, limit the output, similar to SQL LIMIT.
+        :return: list, all documents in the index
+        """
+        hits = super().all(as_hit=True, index=index, limit=limit)
+
+        # return
+        return [cls.from_hit(hit) for hit in hits]
+
 
     def create(self, **kwargs):
         # update the created and edited field
