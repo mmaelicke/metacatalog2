@@ -270,7 +270,7 @@ class Page(DocType):
 
         # only the index is known, search for the object
         if isinstance(context, str):
-            results = list(cls.search().filter('match', _id=id))
+            results = list(cls.search(index=context).filter('match', _id=id))
 
             if len(results) > 1 and strict:
                 raise HTTPError(409, 'Conflict: Multiple Pages found for id={0} in Context={1}'.format(id, context))
