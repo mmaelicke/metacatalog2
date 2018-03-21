@@ -314,6 +314,34 @@ class Page(DocType):
         # return
         return [cls.from_hit(hit) for hit in hits]
 
+    @classmethod
+    def all_coordinates(cls, precision='1m', index=None):
+        """
+        Use a aggregation to create a geohash grid from all documents with coordinate information.
+        The precision defines the aggregation level. The default setting of 1 meter will slow the
+        aggregation down for larger bounding boxes, then a coarser precision should be chosen.
+
+        TODO: add a optional bounding box filter to narrow the results down
+
+        :param precision: integer or string, the geohash precision.
+        :param index: the index (or alias) that should be used for searching
+        :return: JSON of all requested coordiantes
+        """
+        # get the search object
+        s = cls.search()
+
+        # parse the indices
+        if index is not None:
+            s = s.index()
+            s = s.index(index.split(','))
+
+        # aggregate, catch the agg object
+        s.aggs.bucket('coordinates', 'geohash_grid', field='coordinates', precision=precision)
+        result = s[0:0].execute()
+
+        return result.aggregations.coordinates.buckets
+
+
 
     def create(self, **kwargs):
         # update the created and edited field
