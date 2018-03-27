@@ -341,6 +341,27 @@ class Page(DocType):
 
         return result.aggregations.coordinates.buckets
 
+    @classmethod
+    def variables(cls, index=None):
+        """
+        Aggregate the given index for variables and return all buckets.
+
+        :param index: the index (or alias) that should be used for aggreagtion
+        :return: JSON of all requested variables
+        """
+        # get the search object
+        s = cls.search()
+
+        # parse the indices
+        if index is not None:
+            s = s.index()
+            s = s.index(index.split(','))
+
+        # aggregate, use a TERM aggregation on variable
+        s.aggs.bucket('variables', 'terms', field='variable.raw', size=1000)   # TODO size hardcoded
+        result = s[0:0].execute()
+
+        return result.aggregations.variables.buckets
 
 
     def create(self, **kwargs):
