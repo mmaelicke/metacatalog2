@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Theme adapted from start bootstrap Resumé theme -->
+
+<head>
+    {% block head %}
+
+        {% block meta %}
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+            <meta name="description" content="">
+            <meta name="author" content="">
+        {% endblock %}
+
+        <title>{% block title %}metacatalog2 -{% block page_title %} Home{% endblock %}{% endblock %}</title>
+
+        <!-- STYLESHEETS -->
+        {% block stylesheets %}
+            <!-- Bootstrap core CSS -->
+            <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+
+            <!-- Custom fonts for this template -->
+            <link href="https://fonts.googleapis.com/css?family=Saira+Extra+Condensed:100,200,300,400,500,600,700,800,900" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+            <link href="{{ url_for('static', filename='vendor/font-awesome/css/font-awesome.min.css') }}" rel="stylesheet">
+
+            <!-- Icons -->
+            <link href="{{ url_for('static', filename='vendor/devicons/css/devicons.min.css') }}" rel="stylesheet">
+            <link href="{{ url_for('static', filename='vendor/simple-line-icons/css/simple-line-icons.css') }}" rel="stylesheet">
+
+            <!-- Leaflet stylesheets -->
+            <link href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}" rel="stylesheet">
+            <link href="{{ url_for('static', filename='vendor/leaflet.markercluster/MarkerCluster.css') }}" rel="stylesheet">
+            <link href="{{ url_for('static', filename='vendor/leaflet.markercluster/MarkerCluster.Default.css') }}" rel="stylesheet">
+            <!-- Custom styles for this template -->
+            <link href="{{ url_for('static', filename='css/resume.css') }}" rel="stylesheet">
+        {% endblock %}
+
+        <!-- load AngularJS in the header -->
+        <!-- it has to be loaded, before the module can be created -->
+        {% block ng_library %}
+            <script src="{{ url_for('static', filename='vendor/angularjs/angular.min.js') }}"></script>
+        {% endblock %}1
+
+
+    {% endblock %}
+</head>
+
+<body id="page-top">
+{% block body %}
+    {% block navigation %}
+        <!-- Navigation block -->
+{% endblock %}
+
+    {% block main %}
+        <!-- main part -->
+        <div class="container-fluid p-0">
+            {% block page %}
+
+            {% endblock %}
+        </div>
+    {% endblock %}
+
+    {% block scripts %}
+        <!-- Bootstrap core JavaScript -->
+        <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+        <!-- Plugin JavaScript -->
+        <script src="{{ url_for('static', filename='vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+
+        <!-- Leaflet -->
+        <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+        <script src="{{ url_for('static', filename='vendor/leaflet/tile.stamen.js') }}"></script>
+        <script src="{{ url_for('static', filename='vendor/leaflet.markercluster/leaflet.markercluster.js') }}"></script>
+
+        <!-- Custom scripts for this template -->
+        <script src="{{ url_for('static', filename='js/resume.js') }}"></script>
+    {% endblock %}
+        <!-- AngularJS -->
+    {% block ng_scripts %}
+        <!-- Change the AngularJS delimiter as angularjs and jinia2 are using the same -->
+        <script>
+            var app = angular.module('{% block ng_appname %}myapp{% endblock %}', []);
+            app.config(['$interpolateProvider', function($interpolateProvider) {
+                $interpolateProvider.startSymbol('{a');
+                $interpolateProvider.endSymbol('a}');
+            }]);
+            {% block ng_code %}
+                // app is already created
+            {% endblock %}
+        </script>
+    {% endblock %}
+
+{% endblock %}
+</body>
+
+</html>

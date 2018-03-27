@@ -1,0 +1,268 @@
+{% extends 'base_resume.html' %}
+
+{% block navigation %}
+    <!-- Navigation block -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top" id="sideNav">
+        <a class="navbar-brand js-scroll-trigger" href="#page-top">
+            <span class="d-block d-lg-none">Start Bootstrap</span>
+            <span class="d-none d-lg-block">
+          <img class="img-fluid img-profile rounded-circle mx-auto mb-2" src="{{ url_for('static', filename='img/logo_sm.png') }}" alt="" style="background-color: white;">
+        </span>
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link js-scroll-trigger" href="#home">Start</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link js-scroll-trigger" href="#map">Map</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link js-scroll-trigger" href="#results">Results</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link js-scroll-trigger" href="#advanced">advanced</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+{% endblock %}
+
+
+{% block page %}
+    <div ng-app="MainApp">
+    <div ng-controller="catalog">
+        <section class="resume-section p-3 p-lg-5 d-flex d-column text-center" id="home">
+            <div class="my-auto" style="width: 100%">
+                <h1 class="mb-0">Meta<span class="text-primary">Catalog</span> 2</h1>
+                <div class="subheading mb-5">store and analyze environmental data the elastic way
+                </div>
+                <p class="mb-5">
+                    What data are you searching for?
+                    </form>
+                </p>
+
+                <ul class="list-inline list-social-icons mb-0">
+                    <li class="list-inline-item">
+                        <a href="mailto:mirko.maelicke@kit.edu" target="_blank">
+                <span class="fa-stack fa-lg">
+                  <i class="fa fa-circle fa-stack-2x"></i>
+                  <i class="fa fa-envelope fa-stack-1x fa-inverse"></i>
+                </span>
+                        </a>
+                    </li>
+                    <li class="list-inline-item">
+                        <a href="https://github.com/mmaelicke" target="_blank">
+                <span class="fa-stack fa-lg">
+                  <i class="fa fa-circle fa-stack-2x"></i>
+                  <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                </span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="resume-section" id="map">
+        </section>
+
+        <section class="resume-section p-3 p-lg-5 d-flex flex-column" id="results">
+            <div class="row">
+                <div class="col col-12">
+                    <div style="max-width: 800px; margin-left: auto; margin-right: auto;">
+
+                        <div class="input-group mb-3">
+                            <input class="form-control form-control-lg" ng-model="searchTerm" ng-change="onSearchChange()" type="text"
+                                   placeholder="type search term" aria-describedby="basic-addon2">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-lg btn-outline-secondary" ng-click="onSearchButton()"><i class="fa fa-2x {a searchIcon a}"></i></button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col col-4">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text" id="txt_sc">Context:</span>
+                                    </div>
+                                    <select class="form-control form-control-sm" ng-model="context" ng-change="onSearchChange()"
+                                        ng-options="ctx for ctx in availableContexts" aria-describedby="txt_sc"></select>
+                                </div>
+                            </div>
+                            <div class="col col-4">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text" id="txt_var">Variable:</span>
+                                    </div>
+                                    <select class="form-control form-control-sm" ng-model="variable" ng-change="onSearchChange()"
+                                            ng-options="var for var in availableVariables" aria-describedby="txt_var"></select>
+                                </div>
+
+                            </div>
+                            <div class="col col-4">
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col col-12">
+                    <div ng-bind="resultmessage"></div>
+                    <!-- Main Result Area -->
+                    <div id="resultArea">
+
+                        <div class="hit alert" ng-repeat="hit in activeResults" id="{a hit._id a}">
+                            <h3>{a hit._source.title a}</h3>
+                            <h4>{a hit._source.variable a}<span class="float-right">ID: {a hit._id a}</span></h4>
+                            <p>{a hit._source.description a}</p>
+                        </div>
+
+                    </div>
+
+                    <!--<code ng-bind="searchresults">
+                    </code>-->
+                </div>
+            </div>
+        </section>
+
+        <section class="resume-section p-3 p-lg-5 d-flex flex-column" id="advanced">
+            <div class="my-auto">
+                <h2 class="mb-5">Advanced Filter</h2>
+                <div class="row">
+                    <div class="col col-12">
+                        <p class="alert alert-danger" style="height: 300px"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    </div>
+{% endblock %}
+
+{% block ng_appname %}MainApp{% endblock %}
+{% block ng_scripts %}
+    {{ super() }}
+    <script>
+    var markers = new L.markerClusterGroup();
+
+    // define AngularJS services
+
+        app.controller('catalog', function($scope, $http){
+            // Define the default values
+            $scope.searchIcon = 'fa-search';
+            $scope.context = 'iwg';
+            $scope.availableContexts = ['meta', 'iwg', 'caos'];    // TODO request this stuff
+            $scope.searchresults = '<i>No Search results found</i>';
+            $scope.activeResults = [];
+            $scope.variable = '-- all --';
+            $scope.availableVariables = ['-- all --', 'We', 'have', 'absolutely', 'no effect']; // TODO request this stuff
+
+            // search button clicked
+            $scope.onSearchButton = function() {
+                moveTo($('#results'));
+            };
+
+            // function to show all Pages on the map
+            $scope.defaultMap = function(){
+                $http.get('/api/'+ $scope.context + '/pages/geohash?precision=10')
+                    .then(function (response) {
+                        // remove the actual marker selection
+                        markers.clearLayers();
+
+                        // create the new Layer
+                        $.each(response.data.points, function(index, point){
+                            var c = point['coordinates'];
+                            var title = 'Resources:' + point['count'];
+                            var m = L.marker(new L.LatLng(c[0], c[1]),{title: title});
+                            m.bindPopup(title);
+                            markers.addLayer(m);
+                        });
+                        map.addLayer(markers);
+                    });
+            };
+
+            // helper functions for parsing the Search results
+            $scope.parseSearchData = function(searchresult){
+                return(searchresult.hits.hits);
+            };
+
+            $scope.parseSearchResultToMap = function(hits){
+                markers.clearLayers();
+
+                // create a new Layer from the hits
+                $.each(hits, function(index, hit){
+                    //console.log(hit);
+                    var c = hit._source.coordinates;
+                    var title = hit._source.title + ' (ID: ' + hit._id + ')';
+                    var m = L.marker(new L.LatLng(c.lat, c.lon), {title: title});
+                    m.bindPopup(title);
+                    markers.addLayer(m);
+                });
+                map.addLayer(markers);
+            };
+
+            // searchBar changed
+            $scope.onSearchChange = function() {
+                if ($scope.searchTerm.length > 3) {
+                    $scope.searchIcon = 'fa-spinner fa-spin';
+
+                    // get the actual results
+                    $http.get('/es/'+ $scope.context +'/_search?pretty&size=5&q=' + $scope.searchTerm)
+                        .then(function(response) {
+                           // console.log(response.data);
+                           $scope.searchresults = response.data;
+
+                           // get the active results and
+                           $scope.activeResults = $scope.parseSearchData(response.data);
+                           $scope.parseSearchResultToMap($scope.activeResults);
+                           console.log($scope.activeResults);
+
+                           // set back the search icon
+                           $scope.searchIcon = 'fa-search';
+                        });
+                } else if ($scope.searchTerm.length == 0) {
+                    // reset everything
+                    $scope.searchresults = '<i>No Search results found</i>';
+                    $scope.activeResults = [];
+                    $scope.defaultMap();
+                }
+            };
+
+            $scope.fillVariables = function(){
+                $http.get('/api/' + $scope.context + '/variables')
+                    .then(function(response){
+                        var l = $.makeArray(['-- all --']);
+                        $scope.availableVariables= l.concat($.map(response.data, function(v){
+                            return v.variable + ' (' + v.count + ')';
+                        }));
+
+                    });
+            };
+
+            // load the default map
+            $scope.defaultMap();
+
+            // fill the variables
+            $scope.fillVariables();
+        });
+
+
+    </script>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script>
+var map = new L.Map('map', {
+    // TODO: This is hard coded, change to the bbox of the actual data
+   center: new L.LatLng(49.7764, 5.8854),
+    zoom: 12
+});
+toner = new L.StamenTileLayer('toner')
+map.addLayer(toner);
+
+</script>
+{% endblock %}
